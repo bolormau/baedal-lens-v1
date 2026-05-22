@@ -78,6 +78,17 @@ export async function getOrderHistory(): Promise<ApiResponse<ScanResult[]>> {
   }
 }
 
+export async function getScanById(id: string): Promise<ApiResponse<ScanResult | null>> {
+  try {
+    const user = await getDbUser()
+    const orders = await prisma.order.findMany({ where: { userId: user.id } })
+    const order = orders.find(o => o.id === id) ?? null
+    return { success: true, data: order as unknown as ScanResult | null }
+  } catch {
+    return { success: false, error: "기록을 불러오지 못했어." }
+  }
+}
+
 export async function deleteAllOrders(): Promise<ApiResponse<void>> {
   try {
     const user = await getDbUser()

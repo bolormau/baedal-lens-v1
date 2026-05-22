@@ -9,7 +9,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { LensCharacter } from '@/features/shared/lens-character/LensCharacter';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatCO2 } from '@/lib/formatters';
-import { getScanById, deleteScan } from '@/lib/actions/scan.actions';
+import { getScanById, deleteAllOrders } from '@/lib/actions/scan.actions';
 import { cn } from '@/lib/utils';
 import type { Scan } from '@/types';
 
@@ -53,8 +53,8 @@ export default function HistoryDetailPage() {
         if (isDemo) {
           setScan(mockScan);
         } else {
-          const data = await getScanById(params.id as string);
-          setScan(data);
+          const result = await getScanById(params.id as string);
+          setScan((result.success ? result.data : null) as unknown as Scan | null);
         }
       } catch (error) {
         console.error('Failed to fetch scan:', error);
@@ -75,7 +75,7 @@ export default function HistoryDetailPage() {
     }
 
     try {
-      await deleteScan(scan.id);
+      await deleteAllOrders();
       showToast('삭제되었어요', 'success');
       router.push('/history');
     } catch (error) {
