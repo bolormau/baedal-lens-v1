@@ -9,7 +9,7 @@ import { useScanStore } from '@/stores/useScanStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { LensCharacter } from '@/features/shared/lens-character/LensCharacter';
 import { formatCO2 } from '@/lib/formatters';
-import { saveScan } from '@/lib/actions/scan.actions';
+import { saveOrder } from '@/lib/actions/scan.actions';
 import { cn } from '@/lib/utils';
 
 const materialColors: Record<string, string> = {
@@ -44,7 +44,7 @@ export default function ScanResultPage() {
     }
 
     try {
-      await saveScan(currentScan);
+      await saveOrder(currentScan);
       showToast('스캔 결과가 저장되었어요!', 'success');
       clearCurrentScan();
       router.push('/home');

@@ -10,7 +10,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatCO2, formatRelativeDate } from '@/lib/formatters';
-import { getScans, deleteScan } from '@/lib/actions/scan.actions';
+import { getOrderHistory, deleteAllOrders } from '@/lib/actions/scan.actions';
 import { cn } from '@/lib/utils';
 import type { Scan } from '@/types';
 
@@ -90,8 +90,8 @@ export default function HistoryPage() {
         if (isDemo) {
           setScans(mockScans);
         } else {
-          const data = await getScans();
-          setScans(data);
+          const result = await getOrderHistory();
+          setScans((result.success ? result.data : []) as unknown as Scan[]);
         }
       } catch (error) {
         console.error('Failed to fetch scans:', error);
@@ -114,7 +114,7 @@ export default function HistoryPage() {
       showToast('삭제되었어요 (데모)', 'success');
     } else {
       try {
-        await deleteScan(deleteTarget);
+        await deleteAllOrders();
         setScans(prev => prev.filter(s => s.id !== deleteTarget));
         showToast('삭제되었어요', 'success');
       } catch (error) {

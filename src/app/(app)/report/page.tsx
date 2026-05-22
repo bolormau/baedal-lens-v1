@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LensCharacter } from '@/features/shared/lens-character/LensCharacter';
 import { useUIStore } from '@/stores/useUIStore';
 import { formatCO2 } from '@/lib/formatters';
-import { getWeeklyReport, getMonthlyReport } from '@/lib/actions/report.actions';
+import { getWeeklyOrders } from '@/lib/actions/report.actions';
 import { cn } from '@/lib/utils';
 import type { WeeklyReport, MonthlyReport } from '@/types';
 
@@ -73,12 +73,10 @@ export default function ReportPage() {
           setWeeklyReport(mockWeeklyReport);
           setMonthlyReport(mockMonthlyReport);
         } else {
-          const [weekly, monthly] = await Promise.all([
-            getWeeklyReport(),
-            getMonthlyReport(),
-          ]);
-          setWeeklyReport(weekly);
-          setMonthlyReport(monthly);
+          const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          const weekEnd = new Date().toISOString();
+          const weekly = await getWeeklyOrders(weekStart, weekEnd);
+          setWeeklyReport((weekly.success ? weekly.data : null) as unknown as WeeklyReport | null);
         }
       } catch (error) {
         console.error('Failed to fetch reports:', error);

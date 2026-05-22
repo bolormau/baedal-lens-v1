@@ -78,3 +78,17 @@ export function formatDate(date: Date): string {
   const paddedMinute = String(minute).padStart(2, "0")
   return `${month}월 ${day}일 ${period} ${displayHour}:${paddedMinute}`
 }
+
+export function formatCO2(grams: number): string {
+  return `${(grams * 6).toLocaleString()}g CO₂`
+}
+
+export function formatRelativeDate(date: Date | string): string {
+  const d = new Date(date)
+  const now = new Date()
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return "오늘"
+  if (diffDays === 1) return "어제"
+  if (diffDays < 7) return `${diffDays}일 전`
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`
+}

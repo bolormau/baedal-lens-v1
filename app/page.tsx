@@ -6,6 +6,7 @@ import { ArrowRight, Camera, Cpu, Lightbulb } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LensCharacter } from "@/features/shared/lens-character/LensCharacter"
 import { Logo } from "@/features/shared/logo/Logo"
+//.
 
 export default async function LandingPage() {
   const { userId } = await auth()
