@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                     String   @id @default(cuid())
+  clerkId                String   @unique
+  email                  String
+  name                   String   @default("")
+  district               String   @default("")
+  toneMode               ToneMode @default(FRIEND)
+  notificationsEnabled   Boolean  @default(false)
+  hasCompletedOnboarding Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  orders  Order[]
+  reports WeeklyReport[]
+
+  @@index([clerkId])
+}
+
+model Order {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant  String
+  category    FoodCategory
+  items       Json
+  plasticG    Int
+  actualG     Int?
+  unrequested String[]
+  weather     WeatherType
+  pm25        PM25Level
+  usedMessage Boolean      @default(false)
+  lenses      Json
+  scannedAt   DateTime     @default(now())
+
+  @@index([userId])
+  @@index([userId, scannedAt])
+  @@index([userId, category])
+}
+
+model WeeklyReport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart DateTime
+  weekEnd   DateTime
+  totalG    Int
+  insight   String
+  narrative String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+}
+
+enum ToneMode {
+  FRIEND
+  FORMAL
+}
+
+enum FoodCategory {
+  CHICKEN
+  CHINESE
+  PIZZA
+  SNACK
+  BURGER
+  KOREAN
+  OTHER
+}
+
+enum WeatherType {
+  SUNNY
+  CLOUDY
+  RAINY
+}
+
+enum PM25Level {
+  GOOD
+  MODERATE
+  BAD
+  VERY_BAD
+}
