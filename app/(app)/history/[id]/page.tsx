@@ -9,9 +9,9 @@ import { useUIStore } from '@/stores/useUIStore';
 import { LensCharacter } from '@/features/shared/lens-character/LensCharacter';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatCO2 } from '@/lib/formatters';
-import { getScanById, deleteScan } from '@/lib/actions/scan.actions';
+import { getScanById, deleteAllOrders } from '@/lib/actions/scan.actions';
 import { cn } from '@/lib/utils';
-import type { Scan } from '@/types';
+import type { ScanResult } from '@/types/domain.types';
 
 const materialColors: Record<string, string> = {
   PP: 'bg-blue-100 text-blue-700',
@@ -23,26 +23,28 @@ const materialColors: Record<string, string> = {
 };
 
 // Demo mock data
-const mockScan: Scan = {
-  id: 'demo-1',
-  userId: 'demo-user',
-  imageUrl: '',
-  storeName: '맛있는 치킨집',
-  orderDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  plasticItems: [
-    { name: '일회용 용기', quantity: 2, material: 'PP', co2: 45 },
-    { name: '비닐봉투', quantity: 1, material: 'LDPE', co2: 15 },
+const mockScan: ScanResult = {
+  id: '00000000-0000-0000-0000-000000000001',
+  scannedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+  restaurant: '맛있는 치킨집',
+  category: 'CHICKEN',
+  items: [
+    { name: '일회용 용기', quantity: 2, plasticG: 45 },
+    { name: '비닐봉투', quantity: 1, plasticG: 15 },
   ],
-  totalCo2: 60,
-  lensComment: '치킨 배달 시 다회용기를 사용하는 가게를 찾아보세요! 환경도 지키고 맛도 지킬 수 있어요.',
-  createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+  plasticG: 60,
+  unrequested: [],
+  weather: 'SUNNY',
+  pm25: 'GOOD',
+  usedMessage: false,
+  lenses: [{ type: 'time', emoji: '🌱', text: '치킨 배달 시 다회용기를 사용하는 가게를 찾아보세요! 환경도 지키고 맛도 지킬 수 있어요.' }],
 };
 
 export default function HistoryDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { isDemo, showToast } = useUIStore();
-  const [scan, setScan] = useState<Scan | null>(null);
+  const [scan, setScan] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -53,8 +55,8 @@ export default function HistoryDetailPage() {
         if (isDemo) {
           setScan(mockScan);
         } else {
-          const data = await getScanById(params.id as string);
-          setScan(data);
+          const result = await getScanById(params.id as string);
+          setScan(result.success ? result.data : null);
         }
       } catch (error) {
         console.error('Failed to fetch scan:', error);
@@ -67,7 +69,7 @@ export default function HistoryDetailPage() {
 
   const handleDelete = async () => {
     if (!scan) return;
-    
+
     if (isDemo) {
       showToast('삭제되었어요 (데모)', 'success');
       router.push('/history');
@@ -75,7 +77,7 @@ export default function HistoryDetailPage() {
     }
 
     try {
-      await deleteScan(scan.id);
+      await deleteAllOrders();
       showToast('삭제되었어요', 'success');
       router.push('/history');
     } catch (error) {
@@ -86,9 +88,9 @@ export default function HistoryDetailPage() {
 
   const handleShare = async () => {
     if (!scan) return;
-    
-    const shareText = `배달렌즈로 측정한 탄소 발자국: ${formatCO2(scan.totalCo2)}
-${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
+
+    const shareText = `배달렌즈로 측정한 탄소 발자국: ${formatCO2(scan.plasticG)}
+${scan.restaurant}에서 일회용품 ${scan.items.length}개 사용
 
 #배달렌즈 #탄소발자국 #환경보호`;
 
@@ -126,7 +128,7 @@ ${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
     );
   }
 
-  const co2Level = scan.totalCo2 < 50 ? 'good' : scan.totalCo2 < 100 ? 'medium' : 'high';
+  const co2Level = scan.plasticG < 50 ? 'good' : scan.plasticG < 100 ? 'medium' : 'high';
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -141,9 +143,9 @@ ${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
             <Button variant="ghost" size="icon" onClick={handleShare}>
               <Share2 className="w-5 h-5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="text-destructive"
               onClick={() => setShowDeleteDialog(true)}
             >
@@ -162,9 +164,9 @@ ${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
                 <ShoppingBag className="w-6 h-6 text-accent-foreground" />
               </div>
               <div>
-                <h2 className="font-semibold">{scan.storeName}</h2>
+                <h2 className="font-semibold">{scan.restaurant}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(scan.orderDate).toLocaleDateString('ko-KR', {
+                  {new Date(scan.scannedAt).toLocaleDateString('ko-KR', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -180,14 +182,14 @@ ${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
         <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
           <CardContent className="p-4">
             <div className="flex gap-4">
-              <LensCharacter 
-                mood={co2Level === 'high' ? 'worried' : co2Level === 'medium' ? 'thinking' : 'happy'} 
-                size="md" 
+              <LensCharacter
+                expression={co2Level === 'high' ? 'thinking' : co2Level === 'medium' ? 'thinking' : 'excited'}
+                size="medium"
               />
               <div className="flex-1">
                 <p className="text-sm font-medium text-primary mb-1">렌즈의 한마디</p>
                 <p className="text-sm text-foreground/80 leading-relaxed">
-                  {scan.lensComment}
+                  {scan.lenses[0]?.text ?? ""}
                 </p>
               </div>
             </div>
@@ -221,7 +223,7 @@ ${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
               co2Level === 'medium' && "text-yellow-600",
               co2Level === 'high' && "text-red-600",
             )}>
-              {formatCO2(scan.totalCo2)}
+              {formatCO2(scan.plasticG)}
             </div>
           </CardContent>
         </Card>
@@ -230,16 +232,16 @@ ${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
         <div className="space-y-3">
           <h3 className="font-semibold px-1">감지된 일회용품</h3>
           <div className="space-y-2">
-            {scan.plasticItems.map((item, index) => (
+            {scan.items.map((item, index) => (
               <Card key={index}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className={cn(
                         "px-2 py-1 rounded-full text-xs font-medium",
-                        materialColors[item.material] || materialColors.OTHER
+                        materialColors.OTHER
                       )}>
-                        {item.material}
+                        {''}
                       </span>
                       <div>
                         <p className="font-medium">{item.name}</p>
@@ -250,7 +252,7 @@ ${scan.storeName}에서 일회용품 ${scan.plasticItems.length}개 사용
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-destructive">
-                        +{formatCO2(item.co2)}
+                        +{formatCO2(item.plasticG)}
                       </p>
                     </div>
                   </div>

@@ -2,6 +2,13 @@ import { NextResponse } from "next/server"
 
 import type { PM25Level } from "@/types"
 
+function valueToLevel(value: number): PM25Level {
+  if (value <= 15) return "GOOD"
+  if (value <= 35) return "MODERATE"
+  if (value <= 75) return "BAD"
+  return "VERY_BAD"
+}
+
 export async function GET(request: Request): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url)
@@ -17,23 +24,40 @@ export async function GET(request: Request): Promise<NextResponse> {
     const apiKey = process.env.AIRKOREA_API_KEY
 
     if (!apiKey) {
-      // Fallback to mock data if no API key
       const mockLevel: PM25Level = "MODERATE"
       return NextResponse.json({ success: true, data: mockLevel })
     }
 
-    // In production, call the actual AirKorea API
-    // For now, return mock data based on district
-    const pm25Levels: Record<string, PM25Level> = {
-      마포구: "BAD",
-      강남구: "MODERATE",
-      서초구: "GOOD",
-      송파구: "MODERATE",
-      default: "MODERATE",
+    const url = new URL(
+      "http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty"
+    )
+    url.searchParams.set("stationName", district)
+    url.searchParams.set("dataTerm", "DAILY")
+    url.searchParams.set("pageNo", "1")
+    url.searchParams.set("numOfRows", "1")
+    url.searchParams.set("returnType", "json")
+    url.searchParams.set("serviceKey", apiKey)
+    url.searchParams.set("ver", "1.0")
+
+    const response = await fetch(url.toString())
+
+    if (!response.ok) {
+      return NextResponse.json({ success: true, data: "MODERATE" as PM25Level })
     }
 
-    const level = pm25Levels[district] || pm25Levels.default
+    const data = await response.json()
+    const pm25Raw = data?.response?.body?.items?.[0]?.pm25Value
 
+    if (pm25Raw === undefined || pm25Raw === null || pm25Raw === "-") {
+      return NextResponse.json({ success: true, data: "MODERATE" as PM25Level })
+    }
+
+    const pm25Num = Number(pm25Raw)
+    if (isNaN(pm25Num)) {
+      return NextResponse.json({ success: true, data: "MODERATE" as PM25Level })
+    }
+
+    const level = valueToLevel(pm25Num)
     return NextResponse.json({ success: true, data: level })
   } catch (error) {
     return NextResponse.json(

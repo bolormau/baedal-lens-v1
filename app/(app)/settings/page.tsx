@@ -159,7 +159,7 @@ export default function SettingsPage() {
               <Avatar className="w-16 h-16">
                 {isDemo ? (
                   <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                    <LensCharacter mood="happy" size="sm" />
+                    <LensCharacter expression="excited" size="small" />
                   </div>
                 ) : (
                   <>
