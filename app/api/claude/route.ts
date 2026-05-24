@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 
+type MessageContent =
+  | { type: "text"; text: string }
+  | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+
+type Message = {
+  role: "user" | "assistant"
+  content: MessageContent[]
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { userId } = await auth()
@@ -11,8 +20,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       )
     }
 
-    const { message, imageBase64 } = await request.json()
-
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
       return NextResponse.json(
@@ -21,34 +28,49 @@ export async function POST(request: Request): Promise<NextResponse> {
       )
     }
 
-    const messages: Array<{
-      role: string
-      content: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }>
-    }> = []
+    const body = await request.json()
+    const {
+      system,
+      messages: bodyMessages,
+      imageBase64,
+      mediaType = "image/jpeg",
+    } = body as {
+      system?: string
+      messages?: Message[]
+      imageBase64?: string
+      mediaType?: string
+    }
 
-    if (imageBase64) {
-      messages.push({
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: "image/jpeg",
-              data: imageBase64,
-            },
+    let messages: Message[]
+
+    if (bodyMessages && bodyMessages.length > 0) {
+      messages = bodyMessages
+    } else if (imageBase64) {
+      const content: MessageContent[] = [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: mediaType,
+            data: imageBase64,
           },
-          {
-            type: "text",
-            text: message || "이 영수증을 분석해줘",
-          },
-        ],
-      })
+        },
+      ]
+      messages = [{ role: "user", content }]
     } else {
-      messages.push({
-        role: "user",
-        content: [{ type: "text", text: message }],
-      })
+      return NextResponse.json(
+        { success: false, error: "messages 또는 imageBase64가 필요해" },
+        { status: 400 }
+      )
+    }
+
+    const requestBody: Record<string, unknown> = {
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      messages,
+    }
+    if (system) {
+      requestBody.system = system
     }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -58,11 +80,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
-        messages,
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {

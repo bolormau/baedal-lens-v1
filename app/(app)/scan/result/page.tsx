@@ -12,18 +12,9 @@ import { formatCO2 } from '@/lib/formatters';
 import { saveOrder } from '@/lib/actions/scan.actions';
 import { cn } from '@/lib/utils';
 
-const materialColors: Record<string, string> = {
-  PP: 'bg-blue-100 text-blue-700',
-  PE: 'bg-green-100 text-green-700',
-  LDPE: 'bg-emerald-100 text-emerald-700',
-  PS: 'bg-orange-100 text-orange-700',
-  PET: 'bg-cyan-100 text-cyan-700',
-  OTHER: 'bg-gray-100 text-gray-700',
-};
-
 export default function ScanResultPage() {
   const router = useRouter();
-  const { currentScan, clearCurrentScan } = useScanStore();
+  const { currentScan, resetScan } = useScanStore();
   const { isDemo, showToast } = useUIStore();
 
   useEffect(() => {
@@ -38,7 +29,7 @@ export default function ScanResultPage() {
 
   const handleSave = async () => {
     if (isDemo) {
-      showToast('데모 모드에서는 저장되지 않아요', 'info');
+      showToast('데모 모드에서는 저장되지 않아요', 'warning');
       router.push('/home');
       return;
     }
@@ -46,7 +37,7 @@ export default function ScanResultPage() {
     try {
       await saveOrder(currentScan);
       showToast('스캔 결과가 저장되었어요!', 'success');
-      clearCurrentScan();
+      resetScan();
       router.push('/home');
     } catch (error) {
       console.error('Save error:', error);
@@ -55,8 +46,8 @@ export default function ScanResultPage() {
   };
 
   const handleShare = async () => {
-    const shareText = `배달렌즈로 측정한 오늘의 탄소 발자국: ${formatCO2(currentScan.totalCo2)}
-${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}개 사용
+    const shareText = `배달렌즈로 측정한 오늘의 탄소 발자국: ${formatCO2(currentScan.plasticG)}
+${currentScan.restaurant}에서 일회용품 ${currentScan.items.length}개 사용
 
 #배달렌즈 #탄소발자국 #환경보호`;
 
@@ -77,7 +68,8 @@ ${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}�
     }
   };
 
-  const co2Level = currentScan.totalCo2 < 50 ? 'good' : currentScan.totalCo2 < 100 ? 'medium' : 'high';
+  const co2Level =
+    currentScan.plasticG < 50 ? 'good' : currentScan.plasticG < 100 ? 'medium' : 'high';
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -88,7 +80,7 @@ ${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}�
             variant="ghost"
             size="icon"
             onClick={() => {
-              clearCurrentScan();
+              resetScan();
               router.back();
             }}
           >
@@ -107,15 +99,17 @@ ${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}�
           <CardContent className="p-4">
             <div className="flex gap-4">
               <div className="flex-shrink-0">
-                <LensCharacter 
-                  mood={co2Level === 'high' ? 'worried' : co2Level === 'medium' ? 'thinking' : 'happy'} 
-                  size="md" 
+                <LensCharacter
+                  expression={
+                    co2Level === 'high' ? 'thinking' : co2Level === 'medium' ? 'curious' : 'excited'
+                  }
+                  size="medium"
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-primary mb-1">렌즈의 한마디</p>
                 <p className="text-sm text-foreground/80 leading-relaxed">
-                  {currentScan.lensComment}
+                  {currentScan.lenses[0]?.text ?? ''}
                 </p>
               </div>
             </div>
@@ -130,9 +124,9 @@ ${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}�
                 <ShoppingBag className="w-6 h-6 text-accent-foreground" />
               </div>
               <div>
-                <h2 className="font-semibold">{currentScan.storeName}</h2>
+                <h2 className="font-semibold">{currentScan.restaurant}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(currentScan.orderDate).toLocaleDateString('ko-KR', {
+                  {new Date(currentScan.scannedAt).toLocaleDateString('ko-KR', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -144,33 +138,37 @@ ${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}�
         </Card>
 
         {/* CO2 Impact */}
-        <Card className={cn(
-          "border-2",
-          co2Level === 'good' && "border-green-500/50 bg-green-50/50",
-          co2Level === 'medium' && "border-yellow-500/50 bg-yellow-50/50",
-          co2Level === 'high' && "border-red-500/50 bg-red-50/50",
-        )}>
+        <Card
+          className={cn(
+            'border-2',
+            co2Level === 'good' && 'border-green-500/50 bg-green-50/50',
+            co2Level === 'medium' && 'border-yellow-500/50 bg-yellow-50/50',
+            co2Level === 'high' && 'border-red-500/50 bg-red-50/50'
+          )}
+        >
           <CardContent className="p-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               {co2Level === 'high' ? (
                 <AlertTriangle className="w-5 h-5 text-red-500" />
               ) : (
-                <Leaf className={cn(
-                  "w-5 h-5",
-                  co2Level === 'good' ? "text-green-500" : "text-yellow-500"
-                )} />
+                <Leaf
+                  className={cn(
+                    'w-5 h-5',
+                    co2Level === 'good' ? 'text-green-500' : 'text-yellow-500'
+                  )}
+                />
               )}
-              <span className="text-sm font-medium text-muted-foreground">
-                예상 탄소 배출량
-              </span>
+              <span className="text-sm font-medium text-muted-foreground">예상 탄소 배출량</span>
             </div>
-            <div className={cn(
-              "text-4xl font-bold mb-1",
-              co2Level === 'good' && "text-green-600",
-              co2Level === 'medium' && "text-yellow-600",
-              co2Level === 'high' && "text-red-600",
-            )}>
-              {formatCO2(currentScan.totalCo2)}
+            <div
+              className={cn(
+                'text-4xl font-bold mb-1',
+                co2Level === 'good' && 'text-green-600',
+                co2Level === 'medium' && 'text-yellow-600',
+                co2Level === 'high' && 'text-red-600'
+              )}
+            >
+              {formatCO2(currentScan.plasticG)}
             </div>
             <p className="text-sm text-muted-foreground">
               {co2Level === 'good' && '훌륭해요! 적은 양이에요'}
@@ -184,28 +182,16 @@ ${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}�
         <div className="space-y-3">
           <h3 className="font-semibold px-1">감지된 일회용품</h3>
           <div className="space-y-2">
-            {currentScan.plasticItems.map((item, index) => (
+            {currentScan.items.map((item, index) => (
               <Card key={index}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className={cn(
-                        "px-2 py-1 rounded-full text-xs font-medium",
-                        materialColors[item.material] || materialColors.OTHER
-                      )}>
-                        {item.material}
-                      </span>
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.quantity}개
-                        </p>
-                      </div>
+                    <div>
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">{item.quantity}개</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-destructive">
-                        +{formatCO2(item.co2)}
-                      </p>
+                      <p className="font-semibold text-destructive">+{formatCO2(item.plasticG)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -232,11 +218,7 @@ ${currentScan.storeName}에서 일회용품 ${currentScan.plasticItems.length}�
 
       {/* Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border pb-safe">
-        <Button 
-          className="w-full" 
-          size="lg"
-          onClick={handleSave}
-        >
+        <Button className="w-full" size="lg" onClick={handleSave}>
           <Save className="w-5 h-5 mr-2" />
           저장하고 홈으로
         </Button>

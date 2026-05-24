@@ -1,10 +1,12 @@
 import { create } from "zustand"
 
-import type { Toast, ConfirmDialogConfig } from "@/types"
+import { isDemoMode } from "@/lib/config"
+import type { Toast, ToastType, ConfirmDialogConfig } from "@/types"
 
 type BottomSheetType = "messages" | "share" | null
 
 type UIState = {
+  isDemo: boolean
   bottomSheetOpen: boolean
   activeBottomSheet: BottomSheetType
   confirmDialogOpen: boolean
@@ -21,9 +23,11 @@ type UIActions = {
   addToast: (toast: Omit<Toast, "id">) => void
   removeToast: (id: string) => void
   setPwaInstallPromptVisible: (visible: boolean) => void
+  showToast: (message: string, type: ToastType) => void
 }
 
 export const useUIStore = create<UIState & UIActions>((set) => ({
+  isDemo: isDemoMode,
   bottomSheetOpen: false,
   activeBottomSheet: null,
   confirmDialogOpen: false,
@@ -45,4 +49,8 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
     })),
   setPwaInstallPromptVisible: (visible) =>
     set({ pwaInstallPromptVisible: visible }),
+  showToast: (message, type) =>
+    set((state) => ({
+      toasts: [...state.toasts, { id: crypto.randomUUID(), message, type }],
+    })),
 }))
