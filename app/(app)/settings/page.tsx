@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUIStore } from '@/stores/useUIStore';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LensCharacter } from '@/features/shared/lens-character/LensCharacter';
-import { deleteAccount } from '@/lib/actions/user.actions';
+import { deleteAllOrders } from '@/lib/actions/scan.actions';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function SettingsPage() {
     }
 
     try {
-      await deleteAccount();
+      await deleteAllOrders();
       await signOut();
       router.push('/');
     } catch (error) {

@@ -56,7 +56,7 @@ export default function HistoryDetailPage() {
           setScan(mockScan);
         } else {
           const result = await getScanById(params.id as string);
-          setScan(result.success ? result.data : null);
+          setScan((result.success ? result.data : null) as unknown as Scan | null);
         }
       } catch (error) {
         console.error('Failed to fetch scan:', error);
