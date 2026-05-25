@@ -55,6 +55,10 @@ export async function POST(request: Request): Promise<NextResponse> {
             data: imageBase64,
           },
         },
+        {
+          type: "text",
+          text: "이 배달 영수증 또는 포장 사진을 분석해줘.",
+        },
       ]
       messages = [{ role: "user", content }]
     } else {
@@ -96,8 +100,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ success: true, data: content })
   } catch (error) {
+    console.error("Claude route error:", error)
     return NextResponse.json(
-      { success: false, error: "잠깐, 뭔가 잘못됐어" },
+      { success: false, error: error instanceof Error ? error.message : "잠깐, 뭔가 잘못됐어" },
       { status: 500 }
     )
   }
