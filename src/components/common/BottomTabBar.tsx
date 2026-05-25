@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Camera, BarChart2, Settings } from "lucide-react"
+import { Home, Camera, CalendarDays, BarChart2, Settings } from "lucide-react"
 
 const TABS = [
-  { href: "/home", label: "홈", icon: Home },
-  { href: "/scan", label: "스캔", icon: Camera },
-  { href: "/report", label: "리포트", icon: BarChart2 },
-  { href: "/settings", label: "설정", icon: Settings },
+  { href: "/home",     label: "홈",      icon: Home         },
+  { href: "/scan",     label: "스캔",    icon: Camera       },
+  { href: "/calendar", label: "캘린더",  icon: CalendarDays },
+  { href: "/report",   label: "리포트",  icon: BarChart2    },
+  { href: "/settings", label: "설정",    icon: Settings     },
 ] as const
 
 export function BottomTabBar() {
