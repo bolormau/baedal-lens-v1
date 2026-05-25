@@ -11,7 +11,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       )
     }
 
-    const { message, imageBase64, mediaType } = await request.json()
+    const { message, imageBase64, mediaType, system } = await request.json() as { message?: string; imageBase64?: string; mediaType?: string; system?: string }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
@@ -46,7 +46,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     } else {
       messages.push({
         role: "user",
-        content: [{ type: "text", text: message }],
+        content: [{ type: "text", text: message ?? "" }],
       })
     }
 
@@ -60,6 +60,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
+        ...(system ? { system } : {}),
         messages,
       }),
     })

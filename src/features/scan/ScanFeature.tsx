@@ -9,15 +9,58 @@ import { useUIStore } from "@/stores/useUIStore"
 import { compressImage } from "./utils/imageCompressor"
 import type { ScanResult, ImpactLensData, FoodCategory } from "@/types"
 
-const SYSTEM_PROMPT = "You are a Korean food delivery plastic analyzer. Analyze the receipt or packaging photo. Return ONLY valid JSON with: restaurant (string), category (CHICKEN|CHINESE|PIZZA|SNACK|BURGER|KOREAN|OTHER), items (array of {name,quantity,plasticG}), plasticG (number), actualG (number), unrequested (array of strings like '소스컵 ×3')."
+const SYSTEM_PROMPT = `You are a Korean food delivery plastic analyzer. Analyze the receipt or packaging photo. Return ONLY valid JSON with no markdown.
+
+JSON shape:
+{"restaurant":"<Korean name>","category":"<CHICKEN|CHINESE|PIZZA|SNACK|BURGER|KOREAN|OTHER>","items":[{"name":"<Korean>","quantity":<number>,"plasticG":<grams>}],"plasticG":<total>,"actualG":<total>,"unrequested":["<item>"]}
+
+unrequested: Items that physically arrived in the delivery bag but are NOT listed as ordered menu items on the receipt. This means ONLY:
+- Sauce cups (소스컵, 케첩팩, 마요소스, 피클컵)
+- Disposable utensils (나무젓가락, 포크, 스푼, 이쑤시개)
+- Plastic bags (비닐봉투)
+- Straws (빨대)
+- Napkins and wet wipes (냅킨, 물티슈)
+- Condiment packets (핫소스팩, 파마산치즈팩)
+
+NEVER include in unrequested:
+- Any food item the customer ordered (치킨, 피자, 콜라 etc.)
+- Any item that appears in the receipt as a menu item
+- Packaging containers that the food comes IN
+
+If nothing unrequested was found, return empty array: []
+
+Respond ONLY with the JSON object, no explanation.`
 
 function selectLenses(plasticG: number, category: FoodCategory, unrequested: string[]): ImpactLensData[] {
-  const year = new Date().getFullYear() + 400
+  const decompositionYear = new Date().getFullYear() + 400
+  const bottles = Math.round(plasticG / 31)
+  const annualG = plasticG * 52
+  const treesPerYear = Math.max(1, Math.round(annualG * 6 / 57 / 365))
+  const unrequestedCount = unrequested.length
+
   const lenses = {
-    invisibility: { type: "invisibility" as const, emoji: "👻", text: "소스컵 등은 주문한 게 아니야. 그냥 딸려왔어." },
-    time: { type: "time" as const, emoji: "⏰", text: `지금 시킨 플라스틱, ${year}년에도 어딘가에 있어.` },
-    scale: { type: "scale" as const, emoji: "⚖️", text: `이번 용기 다 모으면 페트병 ${Math.round(plasticG / 31)}개 무게야.` },
-    accumulation: { type: "accumulation" as const, emoji: "📦", text: "이 페이스면 1년에 배달 용기만 수백 개야." },
+    invisibility: {
+      type: "invisibility" as const,
+      emoji: "👻",
+      text: unrequestedCount > 0
+        ? `${unrequested.join(", ")} — 주문 안 했는데 왔어. 이것만 ${unrequestedCount}개, 매주 시키면 1년에 ${unrequestedCount * 52}개야.`
+        : "소스컵 등은 주문한 게 아니야. 그냥 딸려왔어.",
+    },
+    time: {
+      type: "time" as const,
+      emoji: "⏰",
+      text: `오늘 배달된 플라스틱 ${plasticG}g, ${decompositionYear}년에도 어딘가에 있어. 네 자녀의 자녀가 살아있을 때까지.`,
+    },
+    scale: {
+      type: "scale" as const,
+      emoji: "⚖️",
+      text: `${plasticG}g = 페트병 ${bottles}개 무게. 한 주에 3번 시키면 페트병 ${bottles * 3}개야.`,
+    },
+    accumulation: {
+      type: "accumulation" as const,
+      emoji: "📦",
+      text: `이 페이스면 1년 뒤 배달 플라스틱만 ${annualG}g. 나무 ${treesPerYear}그루가 1년 내내 흡수해야 하는 양이야.`,
+    },
   }
   if (unrequested.length > 0) return [lenses.invisibility, lenses.time, lenses.scale]
   if (category === "CHICKEN") return [lenses.scale, lenses.accumulation, lenses.time]
