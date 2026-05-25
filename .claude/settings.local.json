@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn tsc:*)",
+      "Bash(yarn build:*)",
+      "Bash(cat:*)",
+      "Bash(cat \"/Users/bolormaaalimaa/Dev/hackathons/baedal-lens-v1/app/\\(app\\)/scan/result/page.tsx\")",
+      "Bash(cat \"/Users/bolormaaalimaa/Dev/hackathons/baedal-lens-v1/app/\\(app\\)/history/page.tsx\")",
+      "Bash(cat \"/Users/bolormaaalimaa/Dev/hackathons/baedal-lens-v1/app/\\(app\\)/history/[id]/page.tsx\")",
+      "Bash(\"/Users/bolormaaalimaa/Dev/hackathons/baedal-lens-v1/app/\\(app\\)/scan/result/page.tsx\":*)",
+      "Bash(\"/Users/bolormaaalimaa/Dev/hackathons/baedal-lens-v1/app/\\(app\\)/home/page.tsx\":*)"
+    ]
+  }
+}

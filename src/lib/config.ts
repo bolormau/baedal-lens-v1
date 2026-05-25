@@ -27,11 +27,11 @@ const env = envSchema.parse({
 export const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true"
 
 export const THRESHOLDS = {
-  scansForBaseline: isDemoMode ? 2 : 5,
-  scansForInsight: isDemoMode ? 2 : 14,
-  scansForMirror: isDemoMode ? 3 : 28,
-  weekDurationDays: isDemoMode ? 1 : 7,
-  ordersForBreakdown: isDemoMode ? 1 : 3,
+  scansForBaseline:   2,
+  scansForInsight:    2,
+  scansForMirror:     4,
+  weekDurationDays:   1,
+  ordersForBreakdown: 1,
 } as const
 
 export const config = {

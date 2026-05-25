@@ -70,7 +70,7 @@ export default function IntroPage() {
 
       if (result.success) {
         localStorage.setItem("dl-onboarding-complete", "true")
-        router.push("/permission")
+        router.push("/home")
       }
     } finally {
       setIsSubmitting(false)
