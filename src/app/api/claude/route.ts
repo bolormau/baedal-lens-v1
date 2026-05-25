@@ -11,7 +11,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       )
     }
 
-    const { message, imageBase64 } = await request.json()
+    const { message, imageBase64, mediaType } = await request.json()
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
@@ -21,29 +21,28 @@ export async function POST(request: Request): Promise<NextResponse> {
       )
     }
 
-    const messages: Array<{
-      role: string
-      content: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }>
-    }> = []
+    type MessageContent =
+      | { type: "text"; text: string }
+      | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+
+    const messages: Array<{ role: string; content: MessageContent[] }> = []
 
     if (imageBase64) {
-      messages.push({
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: "image/jpeg",
-              data: imageBase64,
-            },
+      const content: MessageContent[] = [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: mediaType ?? "image/jpeg",
+            data: imageBase64,
           },
-          {
-            type: "text",
-            text: message || "이 영수증을 분석해줘",
-          },
-        ],
-      })
+        },
+        {
+          type: "text",
+          text: "이 배달 영수증 또는 포장 사진을 분석해줘.",
+        },
+      ]
+      messages.push({ role: "user", content })
     } else {
       messages.push({
         role: "user",
@@ -78,8 +77,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ success: true, data: content })
   } catch (error) {
+    console.error("Claude route error:", error)
     return NextResponse.json(
-      { success: false, error: "잠깐, 뭔가 잘못됐어" },
+      { success: false, error: error instanceof Error ? error.message : "잠깐, 뭔가 잘못됐어" },
       { status: 500 }
     )
   }

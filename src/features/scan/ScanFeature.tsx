@@ -71,10 +71,11 @@ export function ScanFeature() {
     setIsAnalyzing(true)
     setScanState({ status: "analyzing" })
     try {
+      const cleanBase64 = compressed.includes(",") ? compressed.split(",")[1] : compressed
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: compressed, mediaType: "image/jpeg", system: SYSTEM_PROMPT, messages: [{ role: "user", content: "이 배달 영수증 또는 포장 사진을 분석해줘." }] }),
+        body: JSON.stringify({ imageBase64: cleanBase64, mediaType: "image/jpeg", system: SYSTEM_PROMPT }),
       })
       const result = await res.json() as { success: boolean; data?: string; error?: string }
       if (!result.success || !result.data) throw new Error(result.error ?? "응답 없음")
