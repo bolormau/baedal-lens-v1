@@ -10,10 +10,6 @@ import { useUIStore } from "@/stores/useUIStore"
 import { saveOrder, getUserStats } from "@/lib/actions/scan.actions"
 import { formatPlasticWeight } from "@/lib/formatters"
 
-function calcScore(plasticG: number, unreqCount: number): number {
-  return Math.max(0, Math.min(100, 100 - Math.min(40, Math.round((plasticG / 500) * 40)) - unreqCount * 5))
-}
-
 function getEquivalent(g: number): string {
   if (g < 52) return `신용카드 ${Math.max(1, Math.round(g / 5))}장 무게`
   if (g < 156) return `500ml 페트병 ${Math.round(g / 31)}개 무게`
@@ -55,12 +51,11 @@ export function ScanResultFeature() {
 
   if (!currentScan) return null
 
-  const score = calcScore(currentScan.plasticG, currentScan.unrequested.length)
   const decompositionYear = new Date().getFullYear() + 400
   const annualG = currentScan.plasticG * 52
-  const scoreLabel = score >= 90 ? "훌륭해 🌿" : score >= 70 ? "괜찮아 😊" : score >= 50 ? "보통이야 😐" : "많이 나왔어 😮"
-  const scoreColor = score >= 90 ? "#2D9E6B" : score >= 70 ? "#8BC34A" : score >= 50 ? "#F5A623" : "#E8685A"
-  const expression = score >= 90 ? "excited" as const : score >= 70 ? "curious" as const : score >= 50 ? "thinking" as const : "surprised" as const
+  const co2G = currentScan.plasticG * 6
+  const treeDays = Math.round(co2G / 57)
+  const bottles = Math.round(currentScan.plasticG / 31)
 
   return (
     <div className="min-h-screen bg-[#F0F5F2] pb-24">
@@ -86,19 +81,40 @@ export function ScanResultFeature() {
           <p className="mt-3 text-[11px] text-[#6B8C7A]">플라스틱은 분해되지 않아요. 더 작은 미세플라스틱이 될 뿐이에요.</p>
         </div>
 
-        {/* Score */}
-        <div className="rounded-[20px] bg-[#FFFFFF] p-5 shadow-[var(--dl-shadow-card)] flex items-center gap-4">
-          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border-4" style={{ borderColor: scoreColor }}>
-            <span className="text-[18px] font-bold" style={{ color: scoreColor }}>{score}</span>
+        {/* Impact Facts */}
+        <div className="rounded-[20px] bg-[#1A2E25] p-5">
+          <p className="text-[15px] font-medium text-white mb-4">이 주문의 실제 환경 비용</p>
+          <div className="flex items-start gap-3 py-3 border-b border-[rgba(255,255,255,0.07)]">
+            <span className="text-[24px] leading-none mt-0.5">🌳</span>
+            <div>
+              <p className="text-[15px] font-medium text-white">나무 {treeDays}일치 CO2 흡수량과 같아</p>
+              <p className="text-[12px] text-[#6B8C7A]">나무 한 그루가 {treeDays}일 동안 흡수해야 상쇄되는 양</p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-[11px] text-[#6B8C7A]">환경 점수</p>
-            <p className="text-[17px] font-semibold text-[#1A2E25]">{scoreLabel}</p>
+          <div className="flex items-start gap-3 py-3 border-b border-[rgba(255,255,255,0.07)]">
+            <span className="text-[24px] leading-none mt-0.5">🍶</span>
+            <div>
+              <p className="text-[15px] font-medium text-white">500ml 페트병 {bottles}개 무게</p>
+              <p className="text-[12px] text-[#6B8C7A]">이 플라스틱을 모두 페트병으로 환산하면</p>
+            </div>
           </div>
-          <LensCharacter expression={expression} size="medium" />
+          <div className="flex items-start gap-3 py-3 border-b border-[rgba(255,255,255,0.07)]">
+            <span className="text-[24px] leading-none mt-0.5">⏳</span>
+            <div>
+              <p className="text-[15px] font-medium text-white">{decompositionYear}년까지 지구에 남아</p>
+              <p className="text-[12px] text-[#6B8C7A]">플라스틱은 분해되지 않아. 더 작은 미세플라스틱이 될 뿐이야.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 py-3">
+            <span className="text-[24px] leading-none mt-0.5">🌊</span>
+            <div>
+              <p className="text-[15px] font-medium text-white">미세플라스틱으로 해양 생태계 오염 가능</p>
+              <p className="text-[12px] text-[#6B8C7A]">잘게 부서진 미세플라스틱은 회수가 불가능해.</p>
+            </div>
+          </div>
         </div>
 
-        {/* Restaurant & items */}
+        {/* Restaurant & items (lens card) */}
         <div className="rounded-[20px] bg-[#FFFFFF] p-5 shadow-[var(--dl-shadow-card)]">
           <p className="text-[15px] font-semibold text-[#1A2E25]">{currentScan.restaurant}</p>
           <p className="mt-1 text-[13px] text-[#6B8C7A]">{currentScan.items.length}가지 · {formatPlasticWeight(currentScan.plasticG)}</p>

@@ -50,6 +50,16 @@ export function SettingsFeature() {
     await updateUserProfile({ toneMode: val ? "formal" : "friend" })
   }
 
+  async function handleSeed() {
+    const res = await fetch("/api/seed-me", { method: "POST" })
+    const json = await res.json() as { success: boolean; data?: { message: string }; error?: string }
+    if (json.success) {
+      addToast({ type: "success", message: "데이터 시드 완료! 새로고침 해봐" })
+    } else {
+      addToast({ type: "error", message: json.error ?? "시드 실패" })
+    }
+  }
+
   function confirmDeleteData() {
     setConfirmDialogConfig({
       title: "스캔 기록 삭제",
@@ -150,6 +160,17 @@ export function SettingsFeature() {
             </Button>
           </div>
         </section>
+        {/* Section 5 — 개발 (dev/demo only) */}
+        {(process.env.NEXT_PUBLIC_DEMO_MODE === "true" || process.env.NODE_ENV === "development") && (
+          <section>
+            <p className="mb-2 px-1 text-[12px] font-medium text-[#6B8C7A]">개발</p>
+            <div className="rounded-[20px] bg-[#FFFFFF] p-2 shadow-[var(--dl-shadow-card)]">
+              <Button variant="ghost" onClick={handleSeed} className="h-12 w-full rounded-full text-[#F5A623]">
+                데모 데이터 불러오기
+              </Button>
+            </div>
+          </section>
+        )}
       </main>
     </div>
   )
