@@ -73,7 +73,7 @@ export const impactLensDataSchema = z.object({
 export type ImpactLensData = z.infer<typeof impactLensDataSchema>
 
 export const scanResultSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   scannedAt: z.string().datetime(),
   restaurant: z.string(),
   category: z.enum(["CHICKEN", "CHINESE", "PIZZA", "SNACK", "BURGER", "KOREAN", "OTHER"]),
@@ -150,6 +150,22 @@ export type WeeklyReport = {
   insightSource: string
   analyzerStatus: AnalyzerStatusItem[]
   mirrorStatus: MirrorState
+}
+
+// ═══════════════════════════════════════
+// Report Data Type
+// ═══════════════════════════════════════
+
+export type ReportData = {
+  orders: ScanResult[]
+  totalG: number
+  insight: string
+  analyzerStatus: AnalyzerStatusItem[]
+  canShowInsight: boolean
+  canShowMirror: boolean
+  categoryBreakdown: CategoryBreakdownItem[]
+  thisWeekG: number
+  prevWeekG: number
 }
 
 // ═══════════════════════════════════════

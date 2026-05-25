@@ -24,7 +24,7 @@ export default function SignInPage() {
           socialButtonsPlacement: "bottom",
         },
       }}
-      redirectUrl="/home"
+      forceRedirectUrl="/home"
       signUpUrl="/sign-up"
     />
   )
